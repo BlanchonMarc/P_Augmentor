@@ -7,7 +7,7 @@ import cv2
 import colorsys
 from PIL import Image
 
-image = cv2.imread("/Users/marc/Documents/Dataset/Aquisition Images Final/Polarcam/image_00001.png")
+image = cv2.imread("/Users/marc/Downloads/2.tiff")
 image = image[:, :, 0]
 
 raw = image
@@ -47,8 +47,59 @@ hsv = np.uint8(cv2.merge(((aop + np.pi / 2) / np.pi * 180,
                           dop * 255,
                           inten / inten.max() * 255)))
 
+"""
+Transform Translate Vertical top
+"""
+tmpprev = np.array(hsv)
+translation = 100
+translated = np.array(hsv)
+translated[translation:, :, :] = translated[:-translation:, :, :]
+translated[:translation, :, :] = 0
+translated = cv2.cvtColor(translated, cv2.COLOR_HSV2RGB)
+translated = Image.fromarray(np.array(translated))
+# translated.show()
 
-rotation = 100
+"""
+Transform Translate Vertical bottom
+"""
+tmpprev = np.array(hsv)
+translation = tmpprev.shape[2] - 100
+translated = np.array(hsv)
+translated[:translation, :, :] = translated[-translation:, :, :]
+translated[translation:, :, :] = 0
+translated = cv2.cvtColor(translated, cv2.COLOR_HSV2RGB)
+translated = Image.fromarray(np.array(translated))
+# translated.show()
+
+"""
+Transform Translate Horizontal left
+"""
+tmpprev = np.array(hsv)
+translation = 100
+translated = np.array(hsv)
+translated[:, translation:, :] = translated[:, :-translation, :]
+translated[:, :translation, :] = 0
+translated = cv2.cvtColor(translated, cv2.COLOR_HSV2RGB)
+translated = Image.fromarray(np.array(translated))
+# translated.show()
+
+"""
+Transform Translate Horizontal right
+"""
+tmpprev = np.array(hsv)
+translation = tmpprev.shape[1] - 100
+translated = np.array(hsv)
+translated[:, :translation, :] = translated[:, -translation:, :]
+translated[:, translation:, :] = 0
+translated = cv2.cvtColor(translated, cv2.COLOR_HSV2RGB)
+translated = Image.fromarray(np.array(translated))
+translated.show()
+
+"""
+Transform Rotate
+"""
+
+rotation = 0
 rotation = rotation % 360
 
 DegToH = np.linspace(0, 360, num=360)
@@ -65,6 +116,6 @@ rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2RGB)
 
 rgb = Image.fromarray(np.array(rgb))
 
-rgb = rgb.rotate(-rotation)
+rgb = rgb.rotate(rotation)
 
-rgb.show()
+# rgb.show()
