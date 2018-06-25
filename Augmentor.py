@@ -12,12 +12,13 @@ import colorsys
 from utils import translate
 from utils import rotate
 from utils import flip
+from utils import polarcam
 
 """
 Open the YAML
 """
 
-with open("example.yaml", 'r') as stream:
+with open("augmentation.yaml", 'r') as stream:
     try:
         data = yaml.load(stream)
     except yaml.YAMLError as exc:
@@ -60,6 +61,8 @@ for increment in data[1]['constraints']['increment']:
 aug_per_im = data[1]['constraints']['nb_im_out']
 
 path_out = data[2]['output']['path']
+
+resizing = data[2]['output']['resize']
 
 """
 Building the vector of possible combinations with parsed informations
@@ -105,9 +108,6 @@ if len(increments) == len(trans_type):
 else:
     raise NameError("contraints: increments and types have inequal length")
 
-"""
-Creating the combinations
-"""
 
 combinations = [[0, 0, 0, 0, 0]]
 
@@ -137,84 +137,31 @@ for comb in range(aug_per_im - 1):
 
     combinations.append(temp_comb)
 
-
-nb_im = 1
-
-
 for indFolder in range(len(files)):
+    nb_im = 1
 
     if im_type[indFolder] == 'polar':
         folderPola = files[indFolder]
-        try:
-            indexgt = im_type.index('gt')
-        except e:
-            print('Corresponging GT for pola is necessary')
-            sys.exit(1)
-
-        folderGT = files[indFolder]
 
         for index in range(len(folderPola)):
-            """
-            POLARIMETRIC AUGMENTATION
-            """
-            """
-            Reading the image with opencv
-            """
 
             image = Image.open(data[0]['inputs']['paths'][
                 indFolder] + folderPola[index])
 
             image = np.array(image)
 
-            """
-            Converting the image into Interpolable HSL if Pola
-            """
-            raw = image
-            quad = np.vstack((np.hstack((image[0::2, 0::2],
-                                        image[0::2, 1::2])),
-                              np.hstack((image[1::2, 1::2],
-                                        image[1::2, 0::2]))))
-            images = []
+            image = polarcam.raw2quad(image, method='linear')
 
-            kernels = [np.array([[1, 0], [0, 0.]]),
-                       np.array([[0, 1], [0, 0.]]),
-                       np.array([[0, 0], [0, 1.]]),
-                       np.array([[0, 0], [1, 0.]])]
+            d = polarcam.quad2pola(image)
 
-            Is = []
-            for k in kernels:
-                Is.append(convolve2d(raw, k, mode='same'))
+            hsvinit = np.uint8(cv2.merge(((d['aop'] + np.pi / 2) / np.pi * 180,
+                                          d['dop'] * 255,
+                                          d['int'] / d['int'].max() * 255)))
 
-            offsets = [[(0, 0), (0, 1), (1, 1), (1, 0)],
-                       [(0, 1), (0, 0), (1, 0), (1, 1)],
-                       [(1, 1), (1, 0), (0, 0), (0, 1)],
-                       [(1, 0), (1, 1), (0, 1), (0, 0)]]
-
-            images = []
-            for (j, o) in enumerate(offsets):
-                images.append(np.zeros(raw.shape))
-                for ide in range(4):
-                    images[j][o[ide][0]::2, o[ide][1]::2] = Is[ide][
-                        o[ide][0]::2, o[ide][1]::2]
-
-            Js = images
-            inten = (Js[0] + Js[1] + Js[2] + Js[3]) / 2.
-            aop = (0.5 * np.arctan2(Js[1] - Js[3], Js[0] - Js[2]))
-            dop = np.sqrt((Js[1] - Js[3])**2 + (
-                Js[0] - Js[2])**2) / (
-                    Js[0] + Js[1] + Js[2] + Js[3] + np.finfo(float).eps) * 2
-
-            hsvinit = np.uint8(cv2.merge(((aop + np.pi / 2) / np.pi * 180,
-                                          dop * 255,
-                                          inten / inten.max() * 255)))
-
-            """
-            Now Augment
-            """
             for aug in range(len(combinations)):
+
                 hsv = hsvinit
                 curr_aug = combinations[aug]
-
                 if curr_aug[3] == 1:
                     hsv = flip.flipXpola(hsv)
                 if curr_aug[4] == 1:
@@ -235,14 +182,23 @@ for indFolder in range(len(files)):
                 converted = cv2.cvtColor(np.array(hsv), cv2.COLOR_HSV2RGB)
                 im_fin = Image.fromarray(np.array(converted))
 
+                if not resizing == 0:
+                    n_width = im_fin.size[0] * resizing
+                    n_height = im_fin.size[1] * resizing
+                    im_fin.thumbnail((n_width, n_height), Image.ANTIALIAS)
+
                 im_fin.save(path_polar + 'image_' + number + '.png')
+                nb_im += 1
 
-                """
-                RGB
-                """
+    else:
 
+        folderGT = files[indFolder]
+        for index in range(len(folderGT)):
+            for aug in range(len(combinations)):
+
+                curr_aug = combinations[aug]
                 rgb = Image.open(data[0]['inputs']['paths'][
-                    indexgt] + folderGT[index])
+                    indFolder] + folderGT[index])
 
                 rgb = np.array(rgb)
 
@@ -266,6 +222,11 @@ for indFolder in range(len(files)):
                 number = format(nb_im, '05')
 
                 im_fin = Image.fromarray(np.array(rgb))
+
+                if not resizing == 0:
+                    n_width = im_fin.size[0] * resizing
+                    n_height = im_fin.size[1] * resizing
+                    im_fin.thumbnail((n_width, n_height), Image.ANTIALIAS)
 
                 im_fin.save(path_gt + 'image_' + number + '.png')
 
