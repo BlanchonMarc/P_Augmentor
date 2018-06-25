@@ -1,0 +1,25 @@
+
+-  inputs:
+        paths:
+            - /Users/marc/Downloads/
+            - /Users/marc/Downloads/
+        extansions:
+            - tiff
+            - tiff
+        type:
+            - polar
+            - gt
+-  constraints:
+        type:
+            - rotation
+            - translation
+            - flipX
+            - flipY
+        increment:
+            - 5
+            - 5
+            - 0.2
+            - 0.2
+        nb_im_out: 20
+- output:
+        path: /Users/marc/Downloads/output/
