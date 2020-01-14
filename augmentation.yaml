@@ -1,13 +1,16 @@
 
 -  inputs:
         paths:
-            - /Users/marc/Downloads/
-            - /Users/marc/Downloads/
+            - /Users/marc/Documents/workspace/PhD/Coding/2018-2019/image_test_aug/
+            - /Users/marc/Documents/workspace/PhD/Coding/2018-2019/image_test_aug/
+            - /Users/marc/Documents/workspace/PhD/Coding/2018-2019/image_test_aug/
         extansions:
+            - tiff
             - tiff
             - tiff
         type:
             - polar
+            - rgb
             - gt
 -  constraints:
         type:
@@ -16,11 +19,11 @@
             - flipX
             - flipY
         increment:
-            - 5
-            - 5
-            - 0.2
-            - 0.2
+            - 90
+            - 0
+            - 0
+            - 0
         nb_im_out: 20
 - output:
         path: /Users/marc/Downloads/output/
-        resize: 0.5
+        resize: 1

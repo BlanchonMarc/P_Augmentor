@@ -7,7 +7,7 @@ import cv2
 import colorsys
 from PIL import Image
 
-image = cv2.imread("/Users/marc/Downloads/test/test2/im00004.png")
+image = cv2.imread("/Users/marc/Downloads/Acquis2/image_00002.tiff")
 image = image[:, :, 0]
 
 raw = image
@@ -103,10 +103,10 @@ translated = Image.fromarray(np.array(translated))
 Transform Rotate
 """
 
-rotation = 10
+rotation = -90
 
 imageH = hsv[:, :, 0]
-tmp = np.array(imageH + (2*rotation))
+tmp = np.array(imageH - (rotation))
 tmp = np.mod(tmp, 360)
 imageH = tmp
 
@@ -128,20 +128,20 @@ rgb.show()
 Transform Flip LEFT RIGHT
 """
 
-tmpprev = np.array(hsv)
+# tmpprev = np.array(hsv)
+#
+# imageH = tmpprev[:, :, 0]
+# tmp = np.array(-1 * imageH + 360)
+# tmp = np.mod(tmp, 360)
+# imageH = tmp
+#
+# hsv[:, :, 0] = imageH
+#
+#
+# rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2RGB)
+#
+# rgb = Image.fromarray(np.array(rgb))
+#
+# rgb = rgb.transpose(Image.FLIP_LEFT_RIGHT)
 
-imageH = tmpprev[:, :, 0]
-tmp = np.array(-1 * imageH + 360)
-tmp = np.mod(tmp, 360)
-imageH = tmp
-
-hsv[:, :, 0] = imageH
-
-
-rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2RGB)
-
-rgb = Image.fromarray(np.array(rgb))
-
-rgb = rgb.transpose(Image.FLIP_LEFT_RIGHT)
-
-rgb.show()
+#rgb.show()

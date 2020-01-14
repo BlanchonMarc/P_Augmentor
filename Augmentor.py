@@ -30,7 +30,7 @@ with open("augmentation.yaml", 'r') as stream:
 Parse the YAML
 """
 
-files = [[0, 0], [0, 0]]
+files = [[0, 0], [0, 0], [0, 0]]
 
 for indx in range(len(data[0]['inputs']['paths'])):
 
@@ -39,8 +39,8 @@ for indx in range(len(data[0]['inputs']['paths'])):
         files[indx].append(file)
 
 
-for indx in range(0, 2):
-    for _ in range(0, 2):
+for indx in range(0, 3):
+    for _ in range(0, 3):
         del files[indx][0]
 
 im_type = []
@@ -108,42 +108,52 @@ if len(increments) == len(trans_type):
 else:
     raise NameError("contraints: increments and types have inequal length")
 
+AllCombinations = []
 
-combinations = [[0, 0, 0, 0, 0]]
+for nbComb in range(len(files[0])):
 
-for comb in range(aug_per_im - 1):
-    temp_comb = []
-    rot_comb = iterrot[randint(0, len(iterrot) - 1)]
-    tranX_comb = itertranX[randint(0,
-                                   len(itertranX) - 1)]
-    tranY_comb = itertranY[randint(0,
-                                   len(itertranY) - 1)]
+    combinations = [[0, 0, 0, 0, 0]]
 
-    prob_test = random.random()
-    flip_combX = 0
-    if prob_test < probX:
-        flip_combX = 1
+    for comb in range(aug_per_im - 1):
+        temp_comb = []
+        rot_comb = iterrot[randint(0, len(iterrot) - 1)]
+        tranX_comb = itertranX[randint(0,
+                                       len(itertranX) - 1)]
+        tranY_comb = itertranY[randint(0,
+                                       len(itertranY) - 1)]
 
-    prob_test = random.random()
-    flip_combY = 0
-    if prob_test < probY:
-        flip_combY = 1
+        prob_test = random.random()
+        flip_combX = 0
+        if prob_test < probX:
+            flip_combX = 1
 
-    temp_comb.append(rot_comb)
-    temp_comb.append(tranX_comb)
-    temp_comb.append(tranY_comb)
-    temp_comb.append(flip_combX)
-    temp_comb.append(flip_combY)
+        prob_test = random.random()
+        flip_combY = 0
+        if prob_test < probY:
+            flip_combY = 1
 
-    combinations.append(temp_comb)
+        temp_comb.append(rot_comb)
+        temp_comb.append(tranX_comb)
+        temp_comb.append(tranY_comb)
+        temp_comb.append(flip_combX)
+        temp_comb.append(flip_combY)
+
+        combinations.append(temp_comb)
+
+        AllCombinations.append(combinations)
+
+n_width = 0
+n_height = 0
 
 for indFolder in range(len(files)):
     nb_im = 1
+    indexcombination = 0
 
     if im_type[indFolder] == 'polar':
         folderPola = files[indFolder]
 
         for index in range(len(folderPola)):
+            combinations = AllCombinations[indexcombination]
 
             image = Image.open(data[0]['inputs']['paths'][
                 indFolder] + folderPola[index])
@@ -158,7 +168,7 @@ for indFolder in range(len(files)):
                                           d['dop'] * 255,
                                           d['int'] / d['int'].max() * 255)))
 
-            for aug in range(len(combinations)):
+            for aug in range(aug_per_im - 1):
 
                 hsv = hsvinit
                 curr_aug = combinations[aug]
@@ -168,6 +178,8 @@ for indFolder in range(len(files)):
                     hsv = flip.flipYpola(hsv)
 
                 hsv = rotate.rotatePola(curr_aug[0], hsv)
+
+                hsv[:,:,0] = hsv[:,:,0] + curr_aug[0]
 
                 hsv = translate.translateX(curr_aug[2], hsv)
 
@@ -187,14 +199,25 @@ for indFolder in range(len(files)):
                     n_height = im_fin.size[1] * resizing
                     im_fin.thumbnail((n_width, n_height), Image.ANTIALIAS)
 
+                if curr_aug[0] == 90 or curr_aug[0] == 270:
+                    newimage = np.array(im_fin)
+                    crop_val = int((n_width - n_height) / 2)
+                    crop = newimage[:, crop_val:-crop_val]
+                    resized_image = cv2.resize(np.array(crop),
+                                               (int(n_width), int(n_height)),
+                                               interpolation=cv2.INTER_CUBIC)
+                    im_fin = Image.fromarray(resized_image)
+
                 im_fin.save(path_polar + 'image_' + number + '.png')
                 nb_im += 1
+            indexcombination += 1
 
     else:
 
         folderGT = files[indFolder]
         for index in range(len(folderGT)):
-            for aug in range(len(combinations)):
+            combinations = AllCombinations[indexcombination]
+            for aug in range(aug_per_im - 1):
 
                 curr_aug = combinations[aug]
                 rgb = Image.open(data[0]['inputs']['paths'][
@@ -224,10 +247,18 @@ for indFolder in range(len(files)):
                 im_fin = Image.fromarray(np.array(rgb))
 
                 if not resizing == 0:
-                    n_width = im_fin.size[0] * resizing
-                    n_height = im_fin.size[1] * resizing
                     im_fin.thumbnail((n_width, n_height), Image.ANTIALIAS)
+
+                if curr_aug[0] == 90 or curr_aug[0] == 270:
+                    newimage = np.array(im_fin)
+                    crop_val = int((n_width - n_height) / 2)
+                    crop = newimage[:, crop_val:-crop_val]
+                    resized_image = cv2.resize(np.array(crop),
+                                               (int(n_width), int(n_height)),
+                                               interpolation=cv2.INTER_CUBIC)
+                    im_fin = Image.fromarray(resized_image)
 
                 im_fin.save(path_gt + 'image_' + number + '.png')
 
                 nb_im += 1
+            indexcombination += 1
